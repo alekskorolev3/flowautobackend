@@ -13,7 +13,7 @@ export async function connectDB() {
 
         const client = new MongoClient(uri, {
             tls: true,
-            tlsAllowInvalidCertificates: false, // true только для теста
+            tlsAllowInvalidCertificates: true, // true только для теста
         })
         await client.connect()
 
