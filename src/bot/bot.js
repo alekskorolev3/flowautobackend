@@ -1,3 +1,6 @@
+import dotenv from 'dotenv'
+dotenv.config({ path: '../.env' })
+
 import { Telegraf } from 'telegraf'
 import { adminMiddleware } from './middlewares/admin.js'
 import { mainKeyboard } from './keyboards/main.js'
