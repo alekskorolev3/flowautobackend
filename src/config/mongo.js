@@ -11,7 +11,10 @@ export async function connectDB() {
             throw new Error('❌ MONGO_URI is not defined')
         }
 
-        client = new MongoClient(uri)
+        const client = new MongoClient(uri, {
+            tls: true,
+            tlsAllowInvalidCertificates: false, // true только для теста
+        })
         await client.connect()
 
         db = client.db(process.env.DB_NAME)
