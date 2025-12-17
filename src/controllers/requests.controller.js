@@ -1,25 +1,13 @@
 import { connectDB } from '../config/mongo.js'
-import { notifyAdmins } from '../services/telegram.service.js'
+import bot from '../bot/index.js'
 
-export async function getRequests(req, res) {
-    const db = await connectDB()
-
-    const items = await db
-        .collection('requests')
-        .find()
-        .sort({ createdAt: -1 })
-        .limit(10)
-        .toArray()
-
-    res.json(items)
-}
-
-export async function createRequest(req, res) {
+export async function POST(req, res) {
     try {
-        const { name, phone, email = '', message = '' } = req.body
+        const body = await req.json()
+        const { name, phone, email, message } = body
 
         if (!name || !phone) {
-            return res.status(400).json({ error: 'Name and phone are required' })
+            return new Response(JSON.stringify({ error: 'Name and phone are required' }), { status: 400 })
         }
 
         const db = await connectDB()
@@ -27,21 +15,26 @@ export async function createRequest(req, res) {
         const newRequest = {
             name,
             phone,
-            email,
-            message,
+            email: email || '',
+            message: message || '',
             status: 'NEW',
             createdAt: new Date()
         }
 
         await db.collection('requests').insertOne(newRequest)
 
-        await notifyAdmins(
-            `📥 Новая заявка!\nИмя: ${name}\nТелефон: ${phone}\nEmail: ${email || '-'}\nСообщение: ${message || '-'}`
-        )
+        // Отправляем уведомление боту
+        const ADMIN_IDS = process.env.ADMIN_IDS?.split(',') || []
+        for (const id of ADMIN_IDS) {
+            await bot.telegram.sendMessage(
+                id,
+                `📥 Новая заявка!\nИмя: ${name}\nТелефон: ${phone}\nEmail: ${email || '-'}\nСообщение: ${message || '-'}`
+            )
+        }
 
-        res.status(201).json({ success: true })
-    } catch (e) {
-        console.error(e)
-        res.status(500).json({ error: 'Something went wrong' })
+        return new Response(JSON.stringify({ success: true }), { status: 201 })
+    } catch (err) {
+        console.error(err)
+        return new Response(JSON.stringify({ error: 'Something went wrong' }), { status: 500 })
     }
 }
