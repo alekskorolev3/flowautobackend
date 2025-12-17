@@ -1,13 +1,24 @@
 import { connectDB } from '../config/mongo.js'
-import bot from '../bot/index.js'
 
-export async function POST(req, res) {
+export async function getRequests(req, res) {
+    const db = await connectDB()
+
+    const items = await db
+        .collection('requests')
+        .find()
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .toArray()
+
+    res.json(items)
+}
+
+export async function createRequest(req, res) {
     try {
-        const body = await req.json()
-        const { name, phone, email, message } = body
+        const { name, phone, email = '', message = '' } = req.body
 
         if (!name || !phone) {
-            return new Response(JSON.stringify({ error: 'Name and phone are required' }), { status: 400 })
+            return res.status(400).json({ error: 'Name and phone are required' })
         }
 
         const db = await connectDB()
@@ -15,26 +26,21 @@ export async function POST(req, res) {
         const newRequest = {
             name,
             phone,
-            email: email || '',
-            message: message || '',
+            email,
+            message,
             status: 'NEW',
             createdAt: new Date()
         }
 
         await db.collection('requests').insertOne(newRequest)
 
-        // Отправляем уведомление боту
-        const ADMIN_IDS = process.env.ADMIN_IDS?.split(',') || []
-        for (const id of ADMIN_IDS) {
-            await bot.telegram.sendMessage(
-                id,
-                `📥 Новая заявка!\nИмя: ${name}\nТелефон: ${phone}\nEmail: ${email || '-'}\nСообщение: ${message || '-'}`
-            )
-        }
+        await notifyAdmins(
+            `📥 Новая заявка!\nИмя: ${name}\nТелефон: ${phone}\nEmail: ${email || '-'}\nСообщение: ${message || '-'}`
+        )
 
-        return new Response(JSON.stringify({ success: true }), { status: 201 })
-    } catch (err) {
-        console.error(err)
-        return new Response(JSON.stringify({ error: 'Something went wrong' }), { status: 500 })
+        res.status(201).json({ success: true })
+    } catch (e) {
+        console.error(e)
+        res.status(500).json({ error: 'Something went wrong' })
     }
 }

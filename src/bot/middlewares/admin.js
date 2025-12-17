@@ -1,10 +1,9 @@
-import clientPromise from '@/lib/mongo'
+import {connectDB} from "../../config/mongo.js";
 
 export const adminMiddleware = async (ctx, next) => {
     if (!ctx.from) return
 
-    const client = await clientPromise
-    const db = client.db("flowautodb")
+    const db = await connectDB()
 
     const admin = await db.collection('admin').findOne({
         telegramId: ctx.from.id

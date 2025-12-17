@@ -1,10 +1,10 @@
 import { ObjectId } from 'mongodb'
-import {CLOSE_REQUEST_MESSAGE, requestMessage} from "@/bot/messages/const";
+import {connectDB} from "../../config/mongo.js";
+import {CLOSE_REQUEST_MESSAGE, requestMessage} from "../messages/const.js";
 
 export const requestsHandler = (bot) => {
     bot.hears('📥 Заявки', async (ctx) => {
-        const client = await clientPromise
-        const db = client.db("flowautodb")
+        const db = await connectDB()
 
         const items = await db
             .collection('requests')
@@ -36,44 +36,11 @@ export const requestsHandler = (bot) => {
         }
     })
 
-    // bot.hears('🚗 Каталог', async (ctx) => {
-    //     const client = await clientPromise
-    //     const db = client.db("flowautodb")
-    //
-    //     const items = await db
-    //         .collection('cars')
-    //         .find()
-    //         .toArray()
-    //
-    //     if (!items.length) {
-    //         return ctx.reply('Заявок нет')
-    //     }
-    //
-    //     for (const car of items) {
-    //         await ctx.reply(
-    //             `🆕 ${car.name}`,
-    //             {
-    //                 reply_markup: {
-    //                     inline_keyboard: [
-    //                         [
-    //                             {
-    //                                 text: 'Изменить',
-    //                                 callback_data: `close:${car._id}`
-    //                             }
-    //                         ]
-    //                     ]
-    //                 }
-    //             }
-    //         )
-    //     }
-    // })
-
     bot.action(/close:(.+)/, async (ctx) => {
         try {
             const id = ctx.match[1];
 
-            const client = await clientPromise;
-            const db = client.db("flowautodb");
+            const db = await connectDB()
 
             // Обновляем статус заявки
             await db.collection('requests').updateOne(
