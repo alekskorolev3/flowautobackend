@@ -16,7 +16,7 @@ export async function getRequests(req, res) {
 
 export async function createRequest(req, res) {
     try {
-        const { name, phone, email = '', message = '' } = req.body
+        const { name, phone, message = '' } = req.body
 
         if (!name || !phone) {
             return res.status(400).json({ error: 'Name and phone are required' })
@@ -27,7 +27,6 @@ export async function createRequest(req, res) {
         const newRequest = {
             name,
             phone,
-            email,
             message,
             status: 'NEW',
             createdAt: new Date()
@@ -36,7 +35,7 @@ export async function createRequest(req, res) {
         await db.collection('requests').insertOne(newRequest)
 
         await notifyAdmins(
-            `📥 Новая заявка!\nИмя: ${name}\nТелефон: ${phone}\nEmail: ${email || '-'}\nСообщение: ${message || '-'}`
+            `📥 Новая заявка!\nИмя: ${name}\nТелефон: ${phone}\nСообщение: ${message || '-'}`
         )
 
         res.status(201).json({ success: true })
